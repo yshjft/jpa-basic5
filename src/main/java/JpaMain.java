@@ -1,4 +1,7 @@
+import jpql.Address;
 import jpql.Member;
+import jpql.MemberDTO;
+import jpql.Team;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -16,9 +19,14 @@ public class JpaMain {
         tx.begin();
 
         try{
+            Team team = new Team();
+            team.setName("teamA");
+            em.persist(team);
+
             Member member = new Member();
             member.setUsername("member1");
             member.setAge(24);
+            member.changeTeam(team);
             em.persist(member);
 
             /*  (TypedQuery & query)
@@ -49,6 +57,50 @@ public class JpaMain {
                         .getSingleResult();
                 System.out.println(singleResult.getUsername());
             */
+
+            /*  (프로젝션)
+                // 영속성 컨텍스트에서 관리됨
+                em.createQuery("select m from Member m", Member.class).getResultList();
+                em.createQuery("select o.address from Order o", Address.class).getResultList();
+
+                // 여러 값 조회 : Object[] 타입으로 조회
+                // List<Object[]> resultList = em.createQuery("select m.username, m.age from Member m")
+                //         .getResultList();
+                // Object[] result = resultList.get(0);
+
+                // 패키지명 다 써줘야합니다.
+                List<MemberDTO> result = em.createQuery("select new jpql.MemberDTO(m.username, m.age) from Member m", MemberDTO.class)
+                        .getResultList();
+                MemberDTO memberDTO = result.get(0);
+                System.out.println("username = "+memberDTO.getUsername());
+                System.out.println("age = "+memberDTO.getAge());
+            */
+
+            /*  (페이징)
+                for(int i = 0; i < 100; i++) {
+                    Member member = new Member();
+                    member.setUsername("member"+i);
+                    member.setAge(i);
+                    em.persist(member);
+                }
+
+                List<Member> result = em.createQuery("select m from Member m order by m.age desc", Member.class)
+                        .setFirstResult(0)
+                        .setMaxResults(10)
+                        .getResultList();
+
+                System.out.println("result = "+result.size());
+                for(Member m : result) {
+                    System.out.println("member = "+ m);
+                }
+            */
+
+            /* (조인)
+                List<Member> result = em.createQuery("select m from Member m join Team  t on m.username = t.name", Member.class)
+                        .getResultList();
+                System.out.println("result size = "+result.size());
+            */
+
 
 
             tx.commit();
