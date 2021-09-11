@@ -1,12 +1,11 @@
-import jpql.Address;
-import jpql.Member;
-import jpql.MemberDTO;
-import jpql.Team;
+import jpql.*;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class JpaMain {
@@ -27,7 +26,14 @@ public class JpaMain {
             member.setUsername("member1");
             member.setAge(24);
             member.changeTeam(team);
+            member.setMemberType(MemberType.ADMIN);
             em.persist(member);
+
+            Member member2 = new Member();
+            member2.setUsername("member2");
+            member2.setAge(20);
+            member2.changeTeam(team);
+            em.persist(member2);
 
             /*  (TypedQuery & query)
                 TypedQuery<Member> query1 = em.createQuery("select m from Member m ", Member.class);
@@ -96,11 +102,78 @@ public class JpaMain {
             */
 
             /* (조인)
-                List<Member> result = em.createQuery("select m from Member m join Team  t on m.username = t.name", Member.class)
+                List<Member> result = em.createQuery("select m from Member m join Team  t on m.username = t.name", M ember.class)
                         .getResultList();
                 System.out.println("result size = "+result.size());
             */
 
+            /*  (jpql 타입 표현)
+                String query = "select m.username, 'HELLO', true From Member m " +
+                                "where m.memberType = :userType";
+                List<Object[]> result = em.createQuery(query)
+                        .setParameter("userType", MemberType.ADMIN)
+                        .getResultList();
+
+                for(Object[] objects : result) {
+                    System.out.println("objects = "+ objects[0]);
+                    System.out.println("objects = "+ objects[1]);
+                    System.out.println("objects = "+ objects[2]);
+                }
+            */
+
+            /*  (조건식)
+                String query = "select " +
+                        "case when m.age <= 10 then '학생요금' " +
+                        "     when m.age >= 60 then '경로요금' " +
+                        "     else '일반요금'" +
+                        "end "+
+                        "from Member m";
+                List<String> result = em.createQuery(query).getResultList();
+                for(String s : result) {
+                    System.out.println("s = "+s);
+                }
+
+                String query2 = "select coalesce(m.username, '이름 없는 회원') from Member m";
+                List<String> result2 = em.createQuery(query2, String.class).getResultList();
+                for(String s : result2) {
+                    System.out.println("s = "+s);
+                }
+
+                String query3 = "select NULLIF(m.username, '관리자') from Member m";
+                List<String> result3 = em.createQuery(query3, String.class).getResultList();
+                for(String s : result3) {
+                    System.out.println("s = "+s);
+                }
+            */
+
+            /*  (jpql 함수)
+                // String query = "select concat('a', 'b') from Member m";
+                String query = "select substring(m.username, 2, 3) from Member m";
+                // String query = "select locate('de', 'abcdegf') from Member m"; // Integer.class
+
+                List<String> result = em.createQuery(query, String.class).getResultList();
+                for(String s : result) {
+                    System.out.println("s = "+s);
+                }
+            */
+
+            String query = "select m.team from Member m";
+            List<Team> result = em.createQuery(query, Team.class).getResultList();
+            for(Team s : result) {
+                System.out.println("s = "+s);
+            }
+
+            String query2 = "select t.members.size from Team t";
+            Integer result2 = em.createQuery(query2, Integer.class).getSingleResult();
+            System.out.println("result2 = "+result2);
+
+            String query3 = "select t.members from Team t";
+            Collection result3 = em.createQuery(query3, Collection.class).getResultList();
+            System.out.println("result3 = "+result3);
+
+            String query4 = "select m.username from Team t join t.members m";
+            Collection result4 = em.createQuery(query4, Collection.class).getResultList();
+            System.out.println("result4 = "+result4);
 
 
             tx.commit();

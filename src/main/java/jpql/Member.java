@@ -15,6 +15,9 @@ public class Member {
     @JoinColumn(name = "TEAM_ID")
     private Team team;
 
+    @Enumerated(EnumType.STRING)
+    private MemberType memberType;
+
     // 연관관계 편의 메서드
     public void changeTeam(Team team) {
         this.team = team;
@@ -49,6 +52,13 @@ public class Member {
         return team;
     }
 
+    public MemberType getMemberType() {
+        return memberType;
+    }
+
+    public void setMemberType(MemberType memberType) {
+        this.memberType = memberType;
+    }
 
     @Override
     public String toString() {
