@@ -18,22 +18,28 @@ public class JpaMain {
         tx.begin();
 
         try{
-            Team team = new Team();
-            team.setName("teamA");
-            em.persist(team);
+            Team teamA = new Team();
+            teamA.setName("팀A");
+            em.persist(teamA);
 
-            Member member = new Member();
-            member.setUsername("member1");
-            member.setAge(24);
-            member.changeTeam(team);
-            member.setMemberType(MemberType.ADMIN);
-            em.persist(member);
+            Team teamB = new Team();
+            teamB.setName("팀B");
+            em.persist(teamB);
+
+            Member member1 = new Member();
+            member1.setUsername("회원1");
+            member1.changeTeam(teamA);
+            em.persist(member1);
 
             Member member2 = new Member();
-            member2.setUsername("member2");
-            member2.setAge(20);
-            member2.changeTeam(team);
+            member2.setUsername("회원2");
+            member2.changeTeam(teamA);
             em.persist(member2);
+
+            Member member3 = new Member();
+            member3.setUsername("회원3");
+            member3.changeTeam(teamB);
+            em.persist(member3);
 
             /*  (TypedQuery & query)
                 TypedQuery<Member> query1 = em.createQuery("select m from Member m ", Member.class);
@@ -157,24 +163,53 @@ public class JpaMain {
                 }
             */
 
-            String query = "select m.team from Member m";
-            List<Team> result = em.createQuery(query, Team.class).getResultList();
-            for(Team s : result) {
-                System.out.println("s = "+s);
-            }
+            /*  (경로 표현식)
+                String query = "select m.team from Member m";
+                List<Team> result = em.createQuery(query, Team.class).getResultList();
+                for(Team s : result) {
+                    System.out.println("s = "+s);
+                }
 
-            String query2 = "select t.members.size from Team t";
-            Integer result2 = em.createQuery(query2, Integer.class).getSingleResult();
-            System.out.println("result2 = "+result2);
+                String query2 = "select t.members.size from Team t";
+                Integer result2 = em.createQuery(query2, Integer.class).getSingleResult();
+                System.out.println("result2 = "+result2);
 
-            String query3 = "select t.members from Team t";
-            Collection result3 = em.createQuery(query3, Collection.class).getResultList();
-            System.out.println("result3 = "+result3);
+                String query3 = "select t.members from Team t";
+                Collection result3 = em.createQuery(query3, Collection.class).getResultList();
+                System.out.println("r esult3 = "+result3);
 
-            String query4 = "select m.username from Team t join t.members m";
-            Collection result4 = em.createQuery(query4, Collection.class).getResultList();
-            System.out.println("result4 = "+result4);
+                String query4 = "select m.username from Team t join t.members m";
+                Collection result4 = em.createQuery(query4, Collection.class).getResultList();
+                System.out.println("result4 = "+result4);
+            */
 
+            /*  (fetch join)
+                // "select m  Member m"인 경우 지연 로딩으로 인해 쿼리를 n+1번 날리게됨
+                String jpql = "select m from Member m join fetch m.team";
+                List<Member> result = em.createQuery(jpql, Member.class).getResultList();
+                for(Member member : result) {
+                    System.out.println("username = "+member.getUsername()+", "+"teamName = "+member.getTeam().getName());
+                }
+
+                // String jpql2 = "select t from Team t join fetch t.members";
+                String jpql2 = "select distinct t from Team t join fetch t.members";
+                List<Team> result2 = em.createQuery(jpql2, Team.class).getResultList();
+                for(Team team : result2) {
+                    System.out.println("team = "+team.getName()+"|"+team.getMembers().size());
+                    for(Member member : team.getMembers()) {
+                        System.out.println("-> member = "+member);
+                    }
+                }
+            */
+
+            // 벌크 연산
+            // 자동으로 FLUSH
+            int resultCnt = em.createQuery("update Member m set m.age=20")
+                    .executeUpdate();
+            em.clear();
+
+            Member findMember = em.find(Member.class, member1.getId());
+            System.out.println(findMember.getAge());
 
             tx.commit();
         }catch(Exception e) {
